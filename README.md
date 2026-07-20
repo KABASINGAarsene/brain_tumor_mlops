@@ -1,4 +1,4 @@
-# 🧠 Brain Tumor Diagnostic Assistant - MLOps Pipeline
+#  Brain Tumor Diagnostic Assistant - MLOps Pipeline
 
 ## Project Overview
 This project is an end-to-end Machine Learning web application designed to assist medical professionals in diagnosing brain tumors from MRI scans. It demonstrates a complete MLOps pipeline, from data exploration and model training to API deployment and a user-facing frontend.
