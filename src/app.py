@@ -5,7 +5,7 @@ import uvicorn
 from src.prediction import predict_mri # Importing your prediction script
 from typing import List
 from fastapi import Form
-from retrain import retrain_model, log_to_database
+from src.retrain import retrain_model, log_to_databas
 # Initializing the API application
 app = FastAPI(
     title="Brain Tumor Diagnosis API", 
