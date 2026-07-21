@@ -2,7 +2,7 @@ import os
 import shutil
 from fastapi import FastAPI, UploadFile, File
 import uvicorn
-from prediction import predict_mri # Importing your prediction script
+from src.prediction import predict_mri # Importing your prediction script
 from typing import List
 from fastapi import Form
 from retrain import retrain_model, log_to_database
