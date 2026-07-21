@@ -9,6 +9,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 DB_CSV_PATH = os.path.join(BASE_DIR, "database", "retrain_log.csv")
 
+# Creating a safe wrapper to catch and delete the bad parameter for Keras 3
+class SafeRandomFlip(tf.keras.layers.RandomFlip):
+    def __init__(self, **kwargs):
+        kwargs.pop("data_format", None)  # Quietly deletes the breaking argument
+        super().__init__(**kwargs)
+
 def preprocess_new_data(image_paths, numeric_label):
     """
     Data Preprocessing of the uploaded data.
@@ -27,10 +33,15 @@ def preprocess_new_data(image_paths, numeric_label):
 
 def retrain_model(image_paths, label_name):
     """
-     Retraining - uses custom model as a pre-trained model.
+    Retraining - uses custom model as a pre-trained model.
     """
     print("Loading existing model for retraining...")
-    model = tf.keras.models.load_model(MODEL_PATH)
+    
+    # Loading the model using the custom wrapper to bypass the crash
+    model = tf.keras.models.load_model(
+        MODEL_PATH,
+        custom_objects={"RandomFlip": SafeRandomFlip}
+    )
     
     # Converting text label to number (1 for Tumor, 0 for Healthy)
     numeric_label = 1 if "Tumor" in label_name else 0

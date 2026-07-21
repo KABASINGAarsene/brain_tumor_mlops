@@ -8,8 +8,18 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 
+# Creating a safe wrapper to catch and delete the bad parameter
+class SafeRandomFlip(tf.keras.layers.RandomFlip):
+    def __init__(self, **kwargs):
+        kwargs.pop("data_format", None)  # Quietly deletes the breaking argument
+        super().__init__(**kwargs)
+
 print("Loading the Brain Tumor Master Model...")
-model = tf.keras.models.load_model(MODEL_PATH)
+# Loading the model using the custom wrapper
+model = tf.keras.models.load_model(
+    MODEL_PATH, 
+    custom_objects={"RandomFlip": SafeRandomFlip}
+)
 print("Model loaded successfully!")
 
 def predict_mri(img_path):
@@ -30,7 +40,7 @@ def predict_mri(img_path):
     # Asking for the Prediction
     prediction = model.predict(img_array)
     
-    #  Translating the Math into Medicine
+    # Translating the Math into Medicine
     # Our model uses a Sigmoid activation, meaning it outputs a single probability between 0 and 1
     probability = prediction[0][0]
     
