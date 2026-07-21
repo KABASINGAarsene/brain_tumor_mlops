@@ -1,10 +1,14 @@
 import os
 import shutil
-from fastapi import FastAPI, UploadFile, File
+import gc  # NEW: Python's Garbage Collector to free up RAM
+from fastapi import FastAPI, UploadFile, File, Form
 import uvicorn
-from src.prediction import predict_mri # Importing your prediction script
 from typing import List
-from fastapi import Form
+
+# Importing TensorFlow backend to forcefully clear hidden memory
+from tensorflow.keras import backend as K
+
+from src.prediction import predict_mri 
 from src.retrain import retrain_model, log_to_database 
 
 # Initializing the API application
@@ -47,6 +51,10 @@ async def predict(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             
+        # Clearing inference memory so it doesn't build up over multiple requests
+        K.clear_session()
+        gc.collect()
+            
     # Returning the JSON result back to the user/web app
     return result
 
@@ -55,6 +63,10 @@ async def retrain_endpoint(label: str = Form(...), files: List[UploadFile] = Fil
     """
     Accepts bulk images, saves them to the database, and triggers retraining.
     """
+    # Clearing out any lingering memory BEFORE we start the heavy training loop
+    K.clear_session()
+    gc.collect()
+    
     # Creating the permanent database folder for images
     db_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "database", "images")
     os.makedirs(db_dir, exist_ok=True)
@@ -77,6 +89,10 @@ async def retrain_endpoint(label: str = Form(...), files: List[UploadFile] = Fil
         return {"message": message, "status": "Success"}
     except Exception as e:
         return {"error": f"Retraining failed: {str(e)}"}
+    finally:
+        # Aggressively clearing memory AFTER training is done to prevent the 512MB crash
+        K.clear_session()
+        gc.collect()
     
 
 if __name__ == "__main__":
