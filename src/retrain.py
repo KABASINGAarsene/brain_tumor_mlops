@@ -9,17 +9,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 DB_CSV_PATH = os.path.join(BASE_DIR, "database", "retrain_log.csv")
 
-# Creating a safe wrapper to catch and delete the bad parameter for Keras 3
-class SafeRandomFlip(tf.keras.layers.RandomFlip):
-    def __init__(self, **kwargs):
-        kwargs.pop("data_format", None)  # Quietly deletes the breaking argument
-        super().__init__(**kwargs)
+#  MONKEY PATCHING
+_original_random_flip_init = tf.keras.layers.RandomFlip.__init__
+
+def _patched_random_flip_init(self, *args, **kwargs):
+    kwargs.pop("data_format", None)
+    _original_random_flip_init(self, *args, **kwargs)
+
+tf.keras.layers.RandomFlip.__init__ = _patched_random_flip_init
+# --------------------------------------------
 
 def preprocess_new_data(image_paths, numeric_label):
-    """
-    Data Preprocessing of the uploaded data.
-    Resizes images to 128x128 and converts them to mathematical arrays.
-    """
     x_new = []
     y_new = []
     
@@ -32,44 +32,27 @@ def preprocess_new_data(image_paths, numeric_label):
     return np.array(x_new), np.array(y_new)
 
 def retrain_model(image_paths, label_name):
-    """
-    Retraining - uses custom model as a pre-trained model.
-    """
     print("Loading existing model for retraining...")
     
-    # Loading the model using the custom wrapper to bypass the crash
-    model = tf.keras.models.load_model(
-        MODEL_PATH,
-        custom_objects={"RandomFlip": SafeRandomFlip}
-    )
+    # Load normally - the patch will silently protect it!
+    model = tf.keras.models.load_model(MODEL_PATH)
     
-    # Converting text label to number (1 for Tumor, 0 for Healthy)
     numeric_label = 1 if "Tumor" in label_name else 0
-    
-    # Preprocessing the data
     x_new, y_new = preprocess_new_data(image_paths, numeric_label)
     
-    # Compiling with a very low learning rate to protect existing knowledge
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
         loss='binary_crossentropy',
         metrics=['accuracy']
     )
     
-    # Retraining the model for 2 epochs
     print(f"Retraining model on {len(image_paths)} new images...")
     model.fit(x_new, y_new, epochs=2, batch_size=2)
-    
-    # Saving the updated model
     model.save(MODEL_PATH)
     
     return f"Successfully retrained the model on {len(image_paths)} images!"
 
 def log_to_database(file_paths, label):
-    """
-    Saving to Database.
-    Logs the retraining event to a CSV file.
-    """
     os.makedirs(os.path.dirname(DB_CSV_PATH), exist_ok=True)
     
     new_data = pd.DataFrame({
@@ -78,7 +61,6 @@ def log_to_database(file_paths, label):
         "status": ["retrained"] * len(file_paths)
     })
     
-    # Appending to existing CSV or creating a new one
     if os.path.exists(DB_CSV_PATH):
         new_data.to_csv(DB_CSV_PATH, mode='a', header=False, index=False)
     else:
