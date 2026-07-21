@@ -1,21 +1,44 @@
-# Uses  preferred Python 3.9 slim image
+# Uses an official, lightweight Python image
+
 FROM python:3.9-slim
 
-# Sets the working directory
+
+
+# Sets the working directory inside the container
+
 WORKDIR /app
 
 
-RUN useradd -m -u 1000 user
-USER user
-ENV PATH="/home/user/.local/bin:$PATH"
 
-# Copies the requirements file and installs dependencies
+# Copies the requirements file and install the dependencies
 
-COPY --chown=user requirements.txt .
+COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copies all the code, models, and data into the container
-COPY --chown=user . .
 
-# Starts ONLY the FastAPI backend on Hugging Face's on port (7860)
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "7860"]
+
+# Copies all your code, models, and data into the container
+
+COPY . .
+
+
+
+# Makes the startup script executable
+
+RUN chmod +x start.sh
+
+
+
+# Opens the ports for FastAPI and Streamlit
+
+EXPOSE 8000
+
+EXPOSE 8501
+
+
+
+# Command to run when the container starts
+
+CMD ["./start.sh"] 
+
