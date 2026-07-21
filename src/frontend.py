@@ -9,7 +9,7 @@ import os  #
 st.set_page_config(page_title="Brain Tumor AI Diagnostic Tool", layout="centered")
 
 # Grabbing the API URL from Render's environment, or default to local for development
-API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 st.title(" Brain Tumor Diagnostic Assistant")
 st.markdown("Upload an MRI scan to receive an AI-assisted diagnostic prediction.")
