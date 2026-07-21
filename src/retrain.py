@@ -9,15 +9,22 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 DB_CSV_PATH = os.path.join(BASE_DIR, "database", "retrain_log.csv")
 
-#  MONKEY PATCHING
+# ---  MONKEY PATCHES ---
+# 1. Fixing RandomFlip data_format error
 _original_random_flip_init = tf.keras.layers.RandomFlip.__init__
-
 def _patched_random_flip_init(self, *args, **kwargs):
     kwargs.pop("data_format", None)
     _original_random_flip_init(self, *args, **kwargs)
-
 tf.keras.layers.RandomFlip.__init__ = _patched_random_flip_init
-# --------------------------------------------
+
+# Fixing GlorotUniform input_axes error
+_original_glorot_init = tf.keras.initializers.GlorotUniform.__init__
+def _patched_glorot_init(self, *args, **kwargs):
+    kwargs.pop("input_axes", None)
+    kwargs.pop("output_axes", None)
+    _original_glorot_init(self, *args, **kwargs)
+tf.keras.initializers.GlorotUniform.__init__ = _patched_glorot_init
+# ------------------------------
 
 def preprocess_new_data(image_paths, numeric_label):
     x_new = []
@@ -33,8 +40,6 @@ def preprocess_new_data(image_paths, numeric_label):
 
 def retrain_model(image_paths, label_name):
     print("Loading existing model for retraining...")
-    
-    # Load normally - the patch will silently protect it!
     model = tf.keras.models.load_model(MODEL_PATH)
     
     numeric_label = 1 if "Tumor" in label_name else 0

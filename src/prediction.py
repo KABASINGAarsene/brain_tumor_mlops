@@ -7,20 +7,24 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 
-#  MONKEY PATCHING 
-# Forcibly intercept the built-in Keras RandomFlip initialization
+# --- MONKEY PATCHES ---
+# Fixing RandomFlip data_format error
 _original_random_flip_init = tf.keras.layers.RandomFlip.__init__
-
 def _patched_random_flip_init(self, *args, **kwargs):
-    kwargs.pop("data_format", None)  # Destroy the bad argument
+    kwargs.pop("data_format", None)
     _original_random_flip_init(self, *args, **kwargs)
-
-# Applying the patch directly to Keras in memory
 tf.keras.layers.RandomFlip.__init__ = _patched_random_flip_init
-# --------------------------------------------
+
+# 2. Fixing GlorotUniform input_axes error
+_original_glorot_init = tf.keras.initializers.GlorotUniform.__init__
+def _patched_glorot_init(self, *args, **kwargs):
+    kwargs.pop("input_axes", None)   # Destroyes the bad input_axes argument
+    kwargs.pop("output_axes", None)  # Destroyes output_axes just to be safe
+    _original_glorot_init(self, *args, **kwargs)
+tf.keras.initializers.GlorotUniform.__init__ = _patched_glorot_init
+# ------------------------------
 
 print("Loading the Brain Tumor Master Model...")
-# Loading normally - the patch will silently protect it!
 model = tf.keras.models.load_model(MODEL_PATH)
 print("Model loaded successfully!")
 
