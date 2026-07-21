@@ -7,7 +7,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "models", "brain_tumor_master_model.h5")
 
-# --- MONKEY PATCHES ---
+# ---  MONKEY PATCHES ---
 # Fixing RandomFlip data_format error
 _original_random_flip_init = tf.keras.layers.RandomFlip.__init__
 def _patched_random_flip_init(self, *args, **kwargs):
@@ -15,13 +15,22 @@ def _patched_random_flip_init(self, *args, **kwargs):
     _original_random_flip_init(self, *args, **kwargs)
 tf.keras.layers.RandomFlip.__init__ = _patched_random_flip_init
 
-# 2. Fixing GlorotUniform input_axes error
+# Fixing GlorotUniform input_axes error
 _original_glorot_init = tf.keras.initializers.GlorotUniform.__init__
 def _patched_glorot_init(self, *args, **kwargs):
-    kwargs.pop("input_axes", None)   # Destroyes the bad input_axes argument
-    kwargs.pop("output_axes", None)  # Destroyes output_axes just to be safe
+    kwargs.pop("input_axes", None)
+    kwargs.pop("output_axes", None)
     _original_glorot_init(self, *args, **kwargs)
 tf.keras.initializers.GlorotUniform.__init__ = _patched_glorot_init
+
+# Fixing BatchNormalization renorm error
+_original_batch_norm_init = tf.keras.layers.BatchNormalization.__init__
+def _patched_batch_norm_init(self, *args, **kwargs):
+    kwargs.pop("renorm", None)
+    kwargs.pop("renorm_clipping", None)
+    kwargs.pop("renorm_momentum", None)
+    _original_batch_norm_init(self, *args, **kwargs)
+tf.keras.layers.BatchNormalization.__init__ = _patched_batch_norm_init
 # ------------------------------
 
 print("Loading the Brain Tumor Master Model...")
