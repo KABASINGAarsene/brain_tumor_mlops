@@ -3,10 +3,13 @@ import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
+import os  #
 
 # Page Setup
 st.set_page_config(page_title="Brain Tumor AI Diagnostic Tool", layout="centered")
-API_URL = "http://127.0.0.1:8000"
+
+# Grabbing the API URL from Render's environment, or default to local for development
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.title(" Brain Tumor Diagnostic Assistant")
 st.markdown("Upload an MRI scan to receive an AI-assisted diagnostic prediction.")
@@ -36,7 +39,7 @@ bars = ax.bar(df['Class'], df['Count'], color=['#ff9999', '#66b3ff'])
 ax.set_ylabel("Number of MRI Scans")
 ax.set_title("Original Training Data Distribution")
 
-# Add numbers on top of the bars
+# Adding numbers on top of the bars
 for bar in bars:
     yval = bar.get_height()
     ax.text(bar.get_x() + bar.get_width()/2, yval + 2, int(yval), ha='center', va='bottom')
@@ -68,7 +71,7 @@ if uploaded_file is not None:
                     diagnosis = result.get("diagnosis")
                     confidence = result.get("confidence")
                     
-                    # Displayin the results beautifully
+                    # Displaying the results beautifully
                     st.subheader("Results:")
                     if "Tumor Detected" in diagnosis:
                         st.error(f"**Diagnosis:** {diagnosis}")

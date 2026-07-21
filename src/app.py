@@ -5,7 +5,8 @@ import uvicorn
 from src.prediction import predict_mri # Importing your prediction script
 from typing import List
 from fastapi import Form
-from src.retrain import retrain_model, log_to_databas
+from src.retrain import retrain_model, log_to_database 
+
 # Initializing the API application
 app = FastAPI(
     title="Brain Tumor Diagnosis API", 
@@ -37,7 +38,7 @@ async def predict(file: UploadFile = File(...)):
         
     # Handing the saved image path to the prediction function
     try:
-        # 3. Running the prediction
+        # Running the prediction
         result = predict_mri(file_path)
     except Exception as e:
         return {"error": f"Failed to process image. Details: {str(e)}"}
@@ -46,7 +47,7 @@ async def predict(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
             
-    # 5. Returning the JSON result back to the user/web app
+    # Returning the JSON result back to the user/web app
     return result
 
 @app.post("/retrain")
